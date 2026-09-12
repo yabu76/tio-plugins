@@ -1,0 +1,61 @@
+-- SPDX-License-Identifier: GPL-2.0-or-later
+-- Copyright (c) 2026 Hidefumi Yabu
+
+local M = require("luadbg")
+local term = require("tios.term")
+
+if not M then
+    local tps = require("tio_plugin_system")
+    local M = dofile(tps.plugin_system_root .. "/submodules/debugger.lua/debugger.lua")
+    if not M then
+        term.print(string.format("Not found debugger.lua in %s/submodules/debugger.lua", tps.plugins_root))
+        term.print(string.format("Plese checkout debugger.lua to %s/.tio-plugins/submodules", tps.plugins_root))
+        return nil
+    end
+end
+
+if M.dbg_inouts then
+    return M
+end
+
+--
+-- convert line break code of stdout
+--
+local function conv_lf_to_crlf(str)
+    local new_str = str:gsub("\r*\n", "\r\n")
+    return new_str
+end
+
+local function dbg_write_tio_mode(str)
+    return io.stderr:write(conv_lf_to_crlf(str))
+end
+
+--
+-- replace stdin to terminal input
+--
+local function dbg_read_tio_mode(prompt)
+    dbg_write_tio_mode(prompt)
+    io.flush()
+    return term.read()
+end
+
+M.dbg_inouts = {
+    os = {
+        read = M.read,
+        write = M.write,
+    },
+    tio = {
+        read = dbg_read_tio_mode,
+        write = dbg_write_tio_mode,
+    }
+}
+
+function M.read(prompt)
+    return M.dbg_inouts[term.inout_scheme].read(prompt)
+end
+
+function M.write(str)
+    return M.dbg_inouts[term.inout_scheme].write(str)
+end
+
+return M

@@ -1,0 +1,52 @@
+--
+-- tio's gui utility
+--   bridge to zenity
+--
+
+local M = {}
+local os_ = require("tios.os")
+local gzen = require("tios.gui.zenity")
+
+local function select_file_or_dir(title, start_dir, select_is_dir, edit_enable)
+    if start_dir == "" then
+        start_dir = "./"
+    end
+
+    local cmd = gzen.C.ZENITY .. " --file-selection"
+    if edit_enable then
+        cmd = cmd .. " --save"
+    end
+    if title == nil or title ~= "" then
+        cmd = string.format("%s --title '%s'", cmd, title)
+    end
+    if select_is_dir then
+        cmd = cmd .. " --directory"
+    end
+    if os.is_cygwin then
+        cmd = cmd .. " --cygpath --unixeol"
+    end
+    cmd = string.format("%s --filename '%s/dummy_file'", cmd, start_dir)
+
+    local ret, exit_code = gzen.run(cmd)
+    if ret == "" then
+        ret = nil
+    end
+    return ret, exit_code
+end
+
+function M.dependency_check()
+    return gzen.dependency_check()
+end
+function M.entry_file(title, start_dir)
+    return select_file_or_dir(title, start_dir, false, true)
+end
+
+function M.select_file(title, start_dir)
+    return select_file_or_dir(title, start_dir, false, false)
+end
+
+function M.select_directory(title, start_dir)
+    return select_file_or_dir(title, start_dir, true, false)
+end
+
+return M

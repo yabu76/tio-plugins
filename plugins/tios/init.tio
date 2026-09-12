@@ -1,0 +1,8 @@
+local M = {}
+
+M.os = require("tios.os")
+M.term = require("tios.term")
+M.tui = require("tios.tui")
+M.gui = require("tios.gui")
+
+return M

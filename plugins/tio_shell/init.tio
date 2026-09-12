@@ -1,0 +1,14 @@
+-- SPDX-License-Identifier: GPL-2.0-or-later
+-- Copyright (c) 2026 Hidefumi Yabu
+
+local M = {}
+local tios = require("tios")
+
+function M.shell()
+    local shell_path = os.getenv("SHELL") or "/bin/sh"
+    tios.term.push_inout_scheme("os")
+    os.execute(shell_path)
+    tios.term.pop_inout_scheme()
+end
+
+return M

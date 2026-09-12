@@ -1,0 +1,129 @@
+local M = {}
+
+M.echo = tio.echo
+M.inkey = tio.inkey
+M.write = io.write
+
+function M.echoln(str)
+    return M.echo(str .. "\r\n")
+end
+
+local function conv_lf_to_crlf(str)
+    local new_str = str:gsub("\r*\n", "\r\n")
+    return new_str
+end
+
+function M.print(...)
+    local args = {...}
+    local argN = #args
+    for i = 1, argN - 1 do
+        io.write(conv_lf_to_crlf(tostring(args[i])))
+        io.write("\t")
+    end
+    if argN > 0 then
+        io.write(conv_lf_to_crlf(tostring(args[argN])))
+    end
+    io.write("\r\n")
+end
+
+function M.read()
+    return tio.input("")
+end
+
+--
+-- stty setting
+--
+M.tty_setting_saved = {}
+
+function M.stty(...)
+    local args = {...}
+    if args[1] == "SAVE" then
+        local fh = io.popen("/usr/bin/stty -g")
+        local cur_tty_setting = fh:read("*a"):gsub("\r?\n?$", "")
+        fh:close()
+        table.insert(M.tty_setting_saved, cur_tty_setting)
+    elseif args[1] == "RESTORE" then
+        local fh = io.popen("/usr/bin/stty " .. table.remove(M.tty_setting_saved))
+        local out = fh:read("*a"):gsub("\r?\n?$", "")
+        fh:close()
+    else
+        local fh = io.popen("/usr/bin/stty " .. table.concat(args, " "))
+        local out = fh:read("*a")
+        fh:close()
+    end
+    return true
+end
+
+function M.stty_os()
+    tio.set_stdout_mode("os")
+    tio.set_stdin_mode("os")
+    return true
+end
+
+function M.stty_tio()
+    tio.set_stdin_mode("tio")
+    tio.set_stdout_mode("tio")
+    return true
+end
+
+M.tty_inout_scheme_stack = {}
+M.inout_scheme = "tio"
+
+function M.inout_scheme_apply_to_tio()
+    if M.inout_scheme == "os" then
+        tio.pause_input_thread()
+        tio.set_sleep_echo(false)
+    else
+        tio.resume_input_thread()
+        tio.set_sleep_echo(true)
+    end
+end
+
+function M.push_inout_scheme(scm)
+    -- push current setting
+    local fh = io.popen("/usr/bin/stty -g")
+    local cur_tty_setting = fh:read("*a"):gsub("\r?\n?$", "")
+    if not M.inout_scheme then
+        M.inout_scheme = "tio"
+    end
+    scm_ent = {M.inout_scheme, cur_tty_setting}
+    table.insert(M.tty_inout_scheme_stack, scm_ent)
+
+    -- change setting
+    if scm == "os" then
+        M.stty_os()
+        M.inout_scheme = "os"
+    else
+        M.stty_tio()
+        M.inout_scheme = "tio"
+    end
+    M.inout_scheme_apply_to_tio()
+end
+
+function M.pop_inout_scheme()
+    local inout_scheme, tty_setting = table.unpack(table.remove(M.tty_inout_scheme_stack))
+    if tty_setting then
+        local fh = io.popen("/usr/bin/stty " .. tty_setting)
+        local out = fh:read("*a"):gsub("\r?\n?$", "")
+        fh:close()
+    end
+    M.inout_scheme = inout_scheme or "tio"
+    M.inout_scheme_apply_to_tio()
+end
+
+function M.clear_screen()
+    -- io.write("\x1b[2J\x1b[H")
+    io.write("\x1bc")
+    io.flush()
+end
+
+function M.cursor_off()
+    io.write("\x1b[?25l")
+    io.flush()
+end
+
+function M.cursor_on()
+    io.write("\x1b[?25h")
+    io.flush()
+end
+return M

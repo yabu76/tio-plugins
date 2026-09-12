@@ -1,0 +1,21 @@
+--
+-- tio script
+-- os module
+--
+
+local M = {}
+
+local function is_cygwin()
+    local fh = io.popen("/usr/bin/uname")
+    local uname = fh:read("*a")
+    fh:close()
+    return (uanme == "cygwin")
+end
+
+M.is_cygwin = is_cygwin()
+
+function M.sleep(n)
+    tio.msleep(n * 1000)
+end
+
+return M

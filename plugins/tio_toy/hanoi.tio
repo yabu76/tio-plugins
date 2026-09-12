@@ -1,0 +1,105 @@
+--
+-- hanoi.tio
+--
+-- SPDX-License-Identifier: GPL-2.0-or-later
+-- Copyright (c) 2026 Hidefumi Yabu
+--
+
+local M = {}
+
+local tios = require("tios")
+
+-- Draw the towers
+local function draw(ctx)
+    tios.term.clear_screen()
+    tios.term.cursor_off()
+    io.write(string.format("=== Tower of Hanoi (Disks: %d) ===\n", ctx.num_disks))
+    io.write("\n")
+
+    -- Top line
+    local padding = string.rep(" ", ctx.num_disks + 1)
+    io.write(string.format("%s|%s   %s|%s   %s|%s\n", padding, padding, padding, padding, padding, padding))
+
+    for h = ctx.num_disks, 1, -1 do
+        local line = ""
+        for t = 1, 3 do
+            local disk = ctx.towers[t][h]
+            if disk then
+                local padding = string.rep(" ", ctx.num_disks - disk)
+                local disk_str = string.rep("*", disk)
+                line = string.format("%s%s(%s%d%s)%s   ", line, padding, disk_str, disk % 10, disk_str, padding)
+            else
+                local padding = string.rep(" ", ctx.num_disks + 1)
+                line = string.format("%s%s|%s   ", line, padding, padding)
+            end
+        end
+        io.write(line, "\n")
+    end
+
+    -- Bottom line
+    io.write(string.rep("-", (ctx.num_disks * 2 + 3) * 3 + 6), "\n")
+
+    -- Names of each tower
+    local padding = string.rep(" ", ctx.num_disks + 1)
+    io.write(string.format("%s1%s   %s2%s   %s3%s\n\n", padding, padding, padding, padding, padding, padding))
+    io.flush()
+end
+
+-- Move the disk
+local function move_disk(ctx, from, to)
+    local disk = table.remove(ctx.towers[from])
+    table.insert(ctx.towers[to], disk)
+    draw(ctx)
+    tios.os.sleep(ctx.sleep_time)
+end
+
+-- Step to resolve hanoi
+local function hanoi_step(ctx, n, from, to, aux)
+    if n > 0 then
+        hanoi_step(ctx, n - 1, from, aux, to)
+        move_disk(ctx, from, to)
+        hanoi_step(ctx, n - 1, aux, to, from)
+    end
+end
+
+-- Initialize context
+local function init(num_disks, sleep_time)
+
+    if not num_disks then
+        num_disks = 5 -- number of sorcers
+    end
+    if not sleep_time then
+        sleep_time = 0.1 -- sleep time at a moving [second]
+    end
+
+    local towers = { {}, {}, {} }
+    for i = num_disks, 1, -1 do
+        table.insert(towers[1], i)
+    end
+
+    return {
+        towers = towers,
+        num_disks = num_disks,
+        sleep_time = sleep_time
+    }
+end
+
+-- Animate hanoi
+function M.hanoi(sleep_time, num_disks)
+
+    local ctx = init(num_disks, sleep_time)
+
+    tios.term.push_inout_scheme("os")
+
+    tios.term.cursor_off()
+    draw(ctx)
+    tios.os.sleep(1)
+    hanoi_step(ctx, ctx.num_disks, 1, 3, 2)
+    tios.term.cursor_on()
+
+    print("Done!")
+
+    tios.term.pop_inout_scheme()
+end
+
+return M

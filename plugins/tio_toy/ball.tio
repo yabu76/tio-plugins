@@ -1,0 +1,55 @@
+--
+-- ball.lua
+--
+-- SPDX-License-Identifier: GPL-2.0-or-later
+-- Copyright (c) 2026 Hidefumi Yabu
+--
+local M = {}
+
+local tios = require("tios")
+local math = require("math")
+
+local function ball_(params)
+    local width, height, max_count, dx, dy = params.width, params.height, params.max_count, params.dx, params.dy
+    local x, y = 1, 2
+    for cnt = 1, max_count do
+        if (x + dx) > width or (x + dx) < 1 then dx = -dx end
+        x = x + dx
+
+        if (y + dy) > height or (y + dy) < 1 then dy = -dy end
+        y = y + dy
+
+        tios.term.clear_screen()
+        tios.term.cursor_off()
+
+        io.write(string.rep("-", width + 2) .. "\n")
+        for h = 1, height do
+            io.write("|")
+            for w = 1, width do
+                if w == math.floor(x) and h == math.floor(y) then
+                    io.write("@")
+                else
+                    io.write(" ")
+                end
+            end
+            io.write("|\n")
+        end
+        io.write(string.rep("-", width + 2) .. "\n")
+        io.flush()
+
+        tios.os.sleep(0.001 / math.sqrt(dx * dx + dy * dy))
+    end
+end
+
+function M.ball(count)
+    if not count then
+        count = 1000
+    end
+    tios.term.push_inout_scheme("os")
+    tios.term.cursor_off()
+    ball_{width = 72, height = 20, max_count = count, dx = 0.1, dy = 0.4}
+    tios.term.cursor_on()
+    tios.term.pop_inout_scheme()
+end
+
+return M

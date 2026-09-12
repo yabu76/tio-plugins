@@ -1,0 +1,24 @@
+--
+-- tio's gui utility
+--   bridge to zenity
+--
+
+local M = {}
+local gzen = require("tios.gui.zenity")
+
+function M.show_info(title, message)
+    local cmd = string.format("%s --info --title '%s' --text '%s'", gzen.C.ZENITY, title, message)
+    return gzen.run(cmd)
+end
+
+function M.show_error(title, message)
+    local cmd = string.format("%s --error --title '%s' --text '%s'", gzen.C.ZENITY, title, message)
+    return gzen.run(cmd)
+end
+
+function M.show_warning(title, message)
+    local cmd = string.format("%s --warning --title '%s' --text '%s'", gzen.C.ZENITY, title, message)
+    return gzen.run(cmd)
+end
+
+return M

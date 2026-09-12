@@ -1,0 +1,150 @@
+--
+-- File Transfer with XYZmodem / Kermit
+--
+-- required:
+--   ymodem, zmodem: lrzsz
+--   kermit: gkermit
+--
+-- SPDX-License-Identifier: GPL-2.0-or-later
+-- Copyright (c) 2026 Hidefumi Yabu
+--
+
+local M = {}
+
+local lfs = require("lfs")
+local term = require("tios.term")
+local gfsel = require("tios.gui.file_selector")
+local tmenu = require("tios.tui.menu")
+
+function M.dependency_check()
+    return gfsel.dependency_check()
+end
+
+function M.optional_dependency_check()
+    local ret = true -- ok
+    local function file_exists(path) return lfs.attributes(path) ~= nil end
+    if not ( file_exists("/usr/bin/sx") and file_exists("/usr/bin/rx") ) then
+        tio.subcmd_println("lrzsz sx/rx not found. can't use XMODEM-1K and YMODEM.")
+        ret = false
+    end
+    if not ( file_exists("/usr/bin/sz") and file_exists("/usr/bin/rz") ) then
+        tio.subcmd_println("lrzsz sz/rz not found. can't use ZMODEM.")
+        ret = false
+    end
+    if not file_exists("/usr/bin/gkermit") then
+        tio.subcmd_println("gkermit not found. can't use KERMIT.")
+        ret = false
+    end
+    return ret
+end
+
+function M.menu()
+    if not M.dependency_check() then
+        tio.subcmd_println("Dependency check for the GUI file selection function failed. Zenity may not be installed.")
+        return nil
+    end
+    if not M.optional_dependency_check() then
+        tio.subcmd_println("Some commands are not installed. Functionality will be limited.")
+    end
+    local options = {"XMODEM-1K send", "XMODEM-1K receive", "XMODEM-CRC send", "XMODEM-CRC receive",
+               "XMODEM-SUM send", "XMODEM-SUM receive", "YMODEM send", "YMODEM receive",
+               "ZMODEM send", "ZMODEM receive", "KERMIT send", "KERMIT receive",
+               "Quit"}
+    local choice = tmenu.select_item("Please enter which transfer protocol to use:", options, "a")
+    if choice == nil then
+        return nil
+    end
+    choice = string.byte(choice) - string.byte("a")
+    local function iota_generator()
+        local val = -1
+        local iota = function()
+            val = val + 1
+            return val
+        end
+        return iota
+    end
+    local iota = iota_generator()
+    local cur_dir = lfs.currentdir()
+    if choice == iota() then
+        tio.subcmd_println("Send file with XMODEM-1K")
+        local file = gfsel.select_file("XMODEM-1K send / Select file", cur_dir)
+        if file then
+            -- tio.send(file, tio.C.XM_1K)
+            tio.exec_shell_command(string.format("? /usr/bin/sx -kb %s", file))
+        end
+    elseif choice == iota() then
+        tio.subcmd_println("Receive file with XMODEM-1K")
+        local file = gfsel.entry_file("XMODEM-1K receive / Enter file", cur_dir)
+        if file then
+            tio.exec_shell_command(string.format("? /usr/bin/rx -Rb %s", file))
+        end
+    elseif choice == iota() then
+        tio.subcmd_println("Send file with XMODEM-CRC")
+        local file = gfsel.select_file("XMODEM-CRC send / Select file", cur_dir)
+        if file then
+            tio.send(file, tio.C.XM_CRC)
+        end
+    elseif choice == iota() then
+        tio.subcmd_println("Receive file with XMODEM-CRC")
+        local file = gfsel.entry_file("XMODEM-CRC receive / Enter file", cur_dir)
+        if file then
+            tio.receive(file, tio.C.XM_CRC)
+        end
+    elseif choice == iota() then
+        tio.subcmd_println("Send file with XMODEM-SUM")
+        local file = gfsel.select_file("XMODEM-SUM send / Select file", cur_dir)
+        if file then
+            tio.send(file, tio.C.XM_SUM)
+        end
+    elseif choice == iota() then
+        tio.subcmd_println("Receive file with XMODEM-SUM")
+        local file = gfsel.entry_file("XMODEM-SUM receive / Enter file", cur_dir)
+        if file then
+            tio.receive(file, tio.C.XM_SUM)
+        end
+    elseif choice == iota() then
+        tio.subcmd_println("Send file with YMODEM")
+        local file = gfsel.select_file("YMODEM send / Select file", cur_dir)
+        if file then
+            -- tio.send(file, tio.C.YM_NORMAL)
+            tio.exec_shell_command(string.format("? /usr/bin/sb -kb %s", file))
+        end
+    elseif choice == iota() then
+        tio.subcmd_println("Receive file with YMODEM")
+        local dir = gfsel.select_directory("YMODEM receive / Select directory", cur_dir)
+        if dir then
+            tio.exec_shell_command(string.format("? cd %s; /usr/bin/rb -Rb", dir))
+        end
+    elseif choice == iota() then
+        tio.subcmd_println("Send file with ZMODEM")
+        local file = gfsel.select_file("ZMODEM send / Enter file", cur_dir)
+        if file then
+            tio.exec_shell_command(string.format("? /usr/bin/sz -b %s", file))
+        end
+    elseif choice == iota() then
+        tio.subcmd_println("Receive file with ZMODEM")
+        local dir = gfsel.select_directory("ZMODEM receive / Select directory", cur_dir)
+        if dir then
+            tio.exec_shell_command(string.format("? cd %s; /usr/bin/rz -Rb", dir))
+        end
+    elseif choice == iota() then
+        tio.subcmd_println("Send file with KERMIT")
+        local file = gfsel.select_file("KERMIT send / Enter file", cur_dir)
+        if file then
+            tio.exec_shell_command(string.format("? /usr/bin/gkermit -XSs %s", file))
+        end
+    elseif choice == iota() then
+        tio.subcmd_println("Receive file with KERMIT")
+        local dir = gfsel.select_directory("KERMIT receive / Select directory", cur_dir)
+        if dir then
+            tio.exec_shell_command(string.format("? cd %s; /usr/bin/gkermit -XSr -b 20", dir))
+        end
+    elseif choice == iota() then
+        tio.subcmd_println("Quit")
+    else
+        tio.subcmd_error_println("Error: Invalid option")
+    end
+    return choice
+end
+
+return M

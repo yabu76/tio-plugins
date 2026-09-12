@@ -1,0 +1,28 @@
+--
+-- tio script
+-- toy module
+--
+-- SPDX-License-Identifier: GPL-2.0-or-later
+-- Copyright (c) 2026 Hidefumi Yabu
+--
+
+local M = {}
+local term = require("tios.term")
+local ball = require("tio_toy.ball")
+local hanoi = require("tio_toy.hanoi")
+
+function M.banner()
+    local banner = [[
+ _    _               _                _               __
+| |_ (_)  ___    ___ | |_  __ _  _ __ | |_      _      \ \
+| __|| | / _ \  / __|| __|/ _` || '__|| __|    (_)_____ | |
+| |_ | || (_) | \__ \| |_| (_| || |   | |_  _   _|_____|| |
+ \__||_| \___/  |___/ \__|\__,_||_|    \__|(_) (_)      | |
+                                                       /_/]]
+    term.print(banner)
+end
+
+M.ball = ball.ball
+M.hanoi = hanoi.hanoi
+
+return M

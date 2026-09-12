@@ -1,0 +1,21 @@
+###############################
+# tio - https://tio.github.io #
+###############################
+
+# Example tio configuration file
+#
+# Place file in any of the following locations:
+#  $XDG_CONFIG_HOME/tio/config
+#  $HOME/.config/tio/config
+#  $HOME/.tioconfig
+
+[default]
+baudrate = 115200
+databits = 8
+flow = none
+stopbits = 1
+parity = none
+script-init-file = /home/your_name/.tio-plugins/_config_examples/_tio-script-init.lua
+prefix-ctrl-key = t
+# map = INLCRNL,ODELBS
+map = ICRCRNL,INLCRNL,ODELBS

@@ -1,0 +1,31 @@
+--
+-- tio's gui utility
+--   bridge to zenity
+--
+
+local M = {}
+local gzen = require("tios.gui.zenity")
+
+function M.ask_yesno(title, message)
+    local cmd = string.format("%s --question --title '%s' --text '%s'", gzen.C.ZENITY, title, message)
+    local _, exit_code = gzen.run(cmd)
+    if exit_code == 0 then
+        return true, exit_code
+    elseif exit_code == 1 then
+        return false, exit_code
+    else
+        return nil, exit_code
+    end
+end
+
+function M.ask_password(title, message)
+    local cmd = string.format("%s --password --title '%s' --text '%s'", gzen.C.ZENITY, title, message)
+    return gzen.run(cmd)
+end
+
+function M.entry(title, label)
+    local cmd = string.format("%s --entry --title '%s' --text '%s'", gzen.C.ZENITY, title, label)
+    return gzen.run(cmd)
+end
+
+return M

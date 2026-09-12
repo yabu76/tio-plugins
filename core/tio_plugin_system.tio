@@ -1,0 +1,78 @@
+-- SPDX-License-Identifier: GPL-2.0-or-later
+-- Copyright (c) 2026 Hidefumi Yabu
+
+local M = {}
+
+M.plugins_root = nil
+M.submodules_root = nil
+
+function M.is_root()
+    local ph = io.popen("/usr/bin/id -u")
+    if not ph then return false end
+    local uid_s = ph:read("*a")
+    ph:close()
+
+    local uid = tonumber(uid_s)
+    return uid == 0
+end
+
+function M.file_exists(path)
+    local fh = io.open(path, "r")
+    if fh == nil then
+        return false
+    end
+    io.close(fh)
+    return true
+end
+
+function M.append_load_path(dir)
+    package.path = string.format("%s;%s/?.lua;%s/?/init.lua;%s/?.tio;%s/?/init.tio",
+                                 package.path, dir, dir, dir, dir)
+    package.cpath = string.format("%s;%s/?.so", package.cpath, dir)
+end
+
+function M.start(config)
+    if type(config) == "string" then
+        local plugin_system_root = config
+        config = {
+            -- default settings
+            plugins_root = plugin_system_root .. "/plugins",
+            submodules_root = plugin_system_root .. "/submodules",
+            permit_root_privileged = false
+        }
+    elseif type(config) == "table" then
+        --  nop
+    else
+        tio.subcmd_println("tio-plugin-system failed: config should be string or table.")
+        return false
+    end
+    if not config.plugins_root then
+        tio.subcmd_println("tio-plugin-system failed: plugins_root not found.")
+        return false
+    end
+
+    if (not config.permit_root_privileged) and M.is_root() then
+        tio.subcmd_println("tio-plugin-system failed: execution with root privileges is prohibited.")
+        return false
+    end
+
+    local dir_p = string.gsub(config.plugins_root, "/+$", "")
+    local dir_s = config.submodules_root and string.gsub(config.submodules_root, "/+$", "") or nil
+
+    if dir_p and M.file_exists(dir_p) then
+        M.append_load_path(dir_p)
+        M.plugins_root = dir_p
+    end
+    if dir_s and M.file_exists(dir_s) then
+        M.append_load_path(dir_s)
+        M.submodules_root = dir_s
+    end
+
+    -- add here if necessary lines exist
+
+    tio.subcmd_println("tio-plugin-system start: plugins_root=%s, submodules_root=%s",
+                       dir_p, dir_s and dir_s or "<<none>>")
+    return true
+end
+
+return M

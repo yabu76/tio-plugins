@@ -1,0 +1,83 @@
+local M = {}
+
+function M.select_item(prompt, val_list, key_opt)
+    -- prepare key_list
+    local key_list = {}
+    local key_byte_default = string.byte('0')
+    if key_opt and type(key_opt) == "table" then
+        if #key_opt ~= #val_list then
+            tio.subcmd_error_println("Error: Mismatch in length between keys and values")
+             return nil, nil
+        end
+        for idx = 1, #key_opt do
+            -- key is one character
+            key_list[idx] = string.sub(tostring(key_opt[idx]), 1, 1)
+        end
+    else
+        local key_byte = key_byte_default
+        local key_str = tostring(key_opt)
+        if key_opt and key_str ~= "" then
+            key_byte = string.byte(key_str, 1)
+        end
+        for idx = 1, #val_list do
+            key_list[idx] = string.char(key_byte)
+            key_byte = key_byte + 1
+        end
+    end
+
+    -- display prompt
+    if prompt == "" then
+        prompt = "Please enter an option:"
+    end
+    tio.subcmd_println(prompt)
+
+    -- display list
+    for idx, option in ipairs(val_list) do
+        tio.subcmd_println(string.format(" (%s) %s", key_list[idx], option))
+    end
+
+    -- check input
+    local input = tio.inkey(tio.C.WAIT_FOREVER)
+    local key_idx = nil
+    for idx = 1, #key_list do
+        if input == key_list[idx] then
+            key_idx = idx
+            break
+        end
+    end
+    if key_idx == nil or val_list[key_idx] == nil then
+        tio.subcmd_println("Error: Invalid option")
+        return nil, nil
+    end
+    return input, key_idx
+end
+
+function M.select_item_by_number(prompt, val_list, ini_idx)
+    -- argument arrangement
+    if prompt == "" then
+        prompt = "Please enter an option by number:"
+    end
+    if ini_idx == nil then
+        ini_idx = 0
+    else
+        ini_idx = tonumber(ini_idx)
+    end
+
+    -- display prompt
+    tio.subcmd_println(prompt)
+
+    -- display list
+    for idx, option in ipairs(val_list) do
+        tio.subcmd_println(string.format(" (%s) %s", (idx - 1) + ini_idx, option))
+    end
+
+    -- check input
+    local input = tonumber( tio.inkey(tio.C.WAIT_FOREVER) )
+    if input == nil or val_list[input - ini_idx + 1] == nil then
+        tio.subcmd_println("Error: Invalid number")
+        return nil, nil
+    end
+    return input, input - ini_idx + 1
+end
+
+return M

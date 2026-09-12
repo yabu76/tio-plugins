@@ -1,0 +1,36 @@
+--
+-- tio's gui utility
+--   bridge to zenity
+--
+
+local M = {}
+
+M.C = {
+    ZENITY = "/usr/bin/zenity",
+}
+
+function M.dependency_check()
+    local function file_exists(path)
+        local fh = io.open(path, "r")
+        if fh == nil then
+            return false
+        end
+        io.close(fh)
+        return true
+    end
+    return file_exists(M.C.ZENITY)
+end
+
+function M.run(cmd)
+    local tmpfile = os.tmpname()
+    local fh = io.popen(cmd .. " 2>&1; echo $? > " .. tmpfile)
+    local out = fh:read("*a")
+    local ret = out:gsub("\r?\n?$", "")
+    fh:close()
+    local rh = io.open(tmpfile, "r")
+    local exit_code = tonumber(rh:read("*n"))
+    rh:close()
+    return ret, exit_code
+end
+
+return M
