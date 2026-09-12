@@ -22,10 +22,14 @@ local function select_file_or_dir(title, start_dir, select_is_dir, edit_enable)
     if select_is_dir then
         cmd = cmd .. " --directory"
     end
-    if os.is_cygwin then
+    if os.is_msys then
         cmd = cmd .. " --cygpath --unixeol"
     end
-    cmd = string.format("%s --filename '%s/dummy_file'", cmd, start_dir)
+    if select_is_dir then
+        cmd = string.format("%s --filename '%s'", cmd, start_dir)
+    else
+        cmd = string.format("%s --filename '%s/dummy_file'", cmd, start_dir)
+    end
 
     local ret, exit_code = gzen.run(cmd)
     if ret == "" then

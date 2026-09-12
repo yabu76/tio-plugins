@@ -4,21 +4,14 @@
 --
 
 local M = {}
+local os_ = require("tios.os")
 
 M.C = {
-    ZENITY = "/usr/bin/zenity",
+    ZENITY = os_.find_cmd_safer("zenity")
 }
 
 function M.dependency_check()
-    local function file_exists(path)
-        local fh = io.open(path, "r")
-        if fh == nil then
-            return false
-        end
-        io.close(fh)
-        return true
-    end
-    return file_exists(M.C.ZENITY)
+    return M.C.ZENITY ~= nil
 end
 
 function M.run(cmd)
