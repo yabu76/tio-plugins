@@ -5,17 +5,44 @@
 
 local M = {}
 
-local function is_cygwin()
-    local fh = io.popen("/usr/bin/uname")
-    local uname = fh:read("*a")
-    fh:close()
-    return (uanme == "cygwin")
+function M.find_cmd_safer(cmd_name)
+    local found = false
+    local cmd_path = nil
+    local safe_path_list = {"/usr/local/bin", "/usr/bin"}
+    for _, dir in ipairs(safe_path_list) do
+        cmd_path = string.format("%s/%s", dir, cmd_name)
+        local fh = io.open(cmd_path, "r")
+        if fh then
+            fh:close()
+            return cmd_path
+        end
+    end
+    local ph = io.popen(string.format("which %s 2>/dev/null", cmd_name))
+    if ph then
+        cmd_path = ph:read("*a"):gsub("\r*\n$", "")
+        if cmd_path and (cmd_path ~= "") then
+            return cmd_path
+        end
+    end
+    return nil
 end
 
-M.is_cygwin = is_cygwin()
+local function is_msys()
+    local UNAME = M.find_cmd_safer("uname")
+    if not UNAME then
+        return false
+    end
+    local fh = io.popen(UNAME .. " -o")
+    local os_name = fh:read("*a"):gsub("\r*\n$", "")
+    fh:close()
+    return (os_name == "Msys")
+end
+
+M.is_msys = is_msys()
 
 function M.sleep(n)
     tio.msleep(n * 1000)
 end
+
 
 return M
