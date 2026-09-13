@@ -2,13 +2,13 @@
 -- Copyright (c) 2026 Hidefumi Yabu
 
 local M = {}
-local tios = require("tios")
+local term = require("tios.term")
 
 function M.shell()
     local shell_path = os.getenv("SHELL") or "/bin/sh"
-    tios.term.push_inout_scheme("os")
+    term.push_inout_scheme("os")
     os.execute(shell_path)
-    tios.term.pop_inout_scheme()
+    term.pop_inout_scheme()
 end
 
 return M
