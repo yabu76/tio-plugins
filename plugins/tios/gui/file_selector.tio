@@ -25,7 +25,7 @@ local function select_file_or_dir(title, start_dir, select_is_dir, edit_enable)
     if os.is_msys then
         cmd = cmd .. " --cygpath --unixeol"
     end
-    if select_is_dir then
+    if select_is_dir and os_.is_msys then
         cmd = string.format("%s --filename '%s'", cmd, start_dir)
     else
         cmd = string.format("%s --filename '%s/dummy_file'", cmd, start_dir)
