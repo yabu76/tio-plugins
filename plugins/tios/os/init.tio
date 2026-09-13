@@ -8,7 +8,7 @@ local M = {}
 function M.find_cmd_safer(cmd_name)
     local found = false
     local cmd_path = nil
-    local safe_path_list = {"/usr/local/bin", "/usr/bin"}
+    local safe_path_list = {"/usr/local/bin", "/usr/bin", "/bin"}
     for _, dir in ipairs(safe_path_list) do
         cmd_path = string.format("%s/%s", dir, cmd_name)
         local fh = io.open(cmd_path, "r")

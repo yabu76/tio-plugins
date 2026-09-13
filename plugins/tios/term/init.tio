@@ -1,4 +1,9 @@
 local M = {}
+local os_ = require("tios.os")
+
+M.C = {
+    STTY = os_.find_cmd_safer("stty")
+}
 
 M.echo = tio.echo
 M.inkey = tio.inkey
@@ -38,16 +43,16 @@ M.tty_setting_saved = {}
 function M.stty(...)
     local args = {...}
     if args[1] == "SAVE" then
-        local fh = io.popen("/usr/bin/stty -g")
+        local fh = io.popen(M.C.STTY .. " -g")
         local cur_tty_setting = fh:read("*a"):gsub("\r?\n?$", "")
         fh:close()
         table.insert(M.tty_setting_saved, cur_tty_setting)
     elseif args[1] == "RESTORE" then
-        local fh = io.popen("/usr/bin/stty " .. table.remove(M.tty_setting_saved))
+        local fh = io.popen(M.C.STTY .. " " .. table.remove(M.tty_setting_saved))
         local out = fh:read("*a"):gsub("\r?\n?$", "")
         fh:close()
     else
-        local fh = io.popen("/usr/bin/stty " .. table.concat(args, " "))
+        local fh = io.popen(M.C.STTY .. " " .. table.concat(args, " "))
         local out = fh:read("*a")
         fh:close()
     end
@@ -81,7 +86,7 @@ end
 
 function M.push_inout_scheme(scm)
     -- push current setting
-    local fh = io.popen("/usr/bin/stty -g")
+    local fh = io.popen(M.C.STTY .. " -g")
     local cur_tty_setting = fh:read("*a"):gsub("\r?\n?$", "")
     if not M.inout_scheme then
         M.inout_scheme = "tio"
@@ -103,7 +108,7 @@ end
 function M.pop_inout_scheme()
     local inout_scheme, tty_setting = table.unpack(table.remove(M.tty_inout_scheme_stack))
     if tty_setting then
-        local fh = io.popen("/usr/bin/stty " .. tty_setting)
+        local fh = io.popen(M.C.STTY .. " " .. tty_setting)
         local out = fh:read("*a"):gsub("\r?\n?$", "")
         fh:close()
     end

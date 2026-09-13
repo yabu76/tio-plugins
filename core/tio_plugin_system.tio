@@ -3,11 +3,39 @@
 
 local M = {}
 
+M.C = {}
+
+local function find_cmd_safe(cmd_name)
+    local found = false
+    local cmd_path = nil
+    local safe_path_list = {"/usr/local/bin", "/usr/bin", "/bin"}
+    for _, dir in ipairs(safe_path_list) do
+        cmd_path = string.format("%s/%s", dir, cmd_name)
+        local fh = io.open(cmd_path, "r")
+        if fh then
+            fh:close()
+            return cmd_path
+        end
+    end
+    return nil
+end
+
+local function get_os_name()
+    local UNAME = find_cmd_safe("uname")
+    local fh = io.popen(UNAME .. " -o")
+    local os_name = fh:read("*a"):gsub("\r*\n$", "")
+    fh:close()
+    return os_name
+end
+
+M.C.OS = get_os_name()
+
 M.plugins_root = nil
 M.submodules_root = nil
 
 function M.is_root()
-    local ph = io.popen("/usr/bin/id -u")
+    local ID_CMD = find_cmd_safe("id")
+    local ph = io.popen(ID_CMD .. " -u")
     if not ph then return false end
     local uid_s = ph:read("*a")
     ph:close()
@@ -51,7 +79,7 @@ function M.start(config)
         return false
     end
 
-    if (not config.permit_root_privileged) and M.is_root() then
+    if (M.C.OS ~= "Haiku") and (not config.permit_root_privileged) and M.is_root() then
         tio.subcmd_println("tio-plugin-system failed: execution with root privileges is prohibited.")
         return false
     end
