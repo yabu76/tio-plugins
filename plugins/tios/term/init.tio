@@ -2,7 +2,8 @@ local M = {}
 local os_ = require("tios.os")
 
 M.C = {
-    STTY = os_.find_cmd_safer("stty")
+    STTY = os_.find_cmd_safer("stty"),
+    TPUT = os_.find_cmd_safer("tput")
 }
 
 M.echo = tio.echo
@@ -116,19 +117,55 @@ function M.pop_inout_scheme()
     M.inout_scheme_apply_to_tio()
 end
 
+function M.get_screen_size()
+    local f = io.popen(M.C.STTY .. " size")
+    if not f then
+        return nil
+    end
+    local result = f:read("*all")
+    f:close()
+    local scr_lines, scr_columns = result:match("(%d+)%s+(%d+)")
+    return scr_columns, scr_lines
+end
+
+M.C.RESET_SCREEN_STR = string.format("%cc", 0x1b)
+M.C.CLEAR_SCREEN_STR = string.format("%c[H%c[2J", 0x1b, 0x1b)
+M.C.CURSOR_OFF_STR = string.format("%c[?25l", 0x1b)
+M.C.CURSOR_ON_STR = string.format("%c[?25h", 0x1b)
+M.C.MOVE_CURSOR_FMT = string.format("%c[%%d;%%dH", 0x1b)
+
+function M.reset_screen()
+    -- this clears cursor settings and screensaver's saved screen too.
+    io.write(M.C.RESET_SCREEN_STR)
+    io.flush()
+end
+
 function M.clear_screen()
-    -- io.write("\x1b[2J\x1b[H")
-    io.write("\x1bc")
+    io.write(M.C.CLEAR_SCREEN_STR)
     io.flush()
 end
 
 function M.cursor_off()
-    io.write("\x1b[?25l")
+    io.write(M.C.CURSOR_OFF_STR)
     io.flush()
 end
 
 function M.cursor_on()
-    io.write("\x1b[?25h")
+    io.write(M.C.CURSOR_ON_STR)
     io.flush()
 end
+
+function M.move_cursor(x, y)
+    io.write(string.format(M.C.MOVE_CURSOR_FMT, y + 1, x + 1)); -- begin with 1
+    io.flush()
+end
+
+function M.switch_to_alternative_screen()
+    os.execute(M.C.TPUT .. " smcup")
+end
+
+function M.switch_back_to_default_screen()
+    os.execute(M.C.TPUT .. " rmcup")
+end
+
 return M
