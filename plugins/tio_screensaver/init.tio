@@ -1,0 +1,136 @@
+--
+-- tio script
+-- screen saver
+--
+-- SPDX-License-Identifier: GPL-2.0-or-later
+-- Copyright (c) 2026 Hidefumi Yabu
+--
+
+local M = {}
+local term = require("tios.term")
+
+M.C = {
+    DEFAULT_TRIGGER_IDLE_TIME = 30 * 1000,
+    DEFAULT_INTERVAL = 3 * 1000,
+}
+
+function M.on_key_press(data)
+    if M.screen_locked then
+        tio.stop_timer()
+        tio.set_hook(tio.C.HK_LOCAL_SEND, nil)
+        tio.set_hook(tio.C.HK_LOCAL_RECEIVE, nil)
+        tio.set_hook(tio.C.HK_TIMER_INTERVAL, nil)
+        term.switch_back_to_default_screen()
+
+        term.cursor_on()
+
+        M.screen_locked = false
+        tio.set_hook(tio.C.HK_TIMER_COMPLETE, M.on_timeout)
+        tio.start_timer(tio.C.WAIT_FOREVER, M.trigger_idle_time)
+        return ""
+    end
+    tio.start_timer(tio.C.WAIT_FOREVER, M.trigger_idle_time)
+    return data
+end
+
+local function format_milliseconds(ms)
+    local hours = math.floor(ms / 3600000)
+    local minutes = math.floor((ms % 3600000) / 60000)
+    local seconds = math.floor((ms % 60000) / 1000)
+    local milliseconds = ms % 1000
+
+    return string.format("%d h %d min %d sec, %d msec (%.3f)",
+                         hours, minutes, seconds, milliseconds, ms / 1000)
+end
+
+local function format_statistics()
+    local tx_total, rx_total = tio.get_statistics()
+    return string.format("Tx: %d, Rx: %d", tx_total, rx_total)
+end
+
+local function default_saver(elapsed)
+
+    local lines = {M.info, format_statistics(), format_milliseconds(elapsed)}
+    local reserved_columns = 0
+    local len
+    for _, v in ipairs(lines) do
+        len = v:len()
+        if len > reserved_columns then
+            reserved_columns = len
+        end
+    end
+
+    local scr_columns, scr_lines = term.get_screen_size()
+    local x = math.random(scr_columns - reserved_columns) - 1
+    local y = math.random(scr_lines - #lines) - 1
+
+    term.clear_screen()
+    for i, v in ipairs(lines) do
+        term.move_cursor(x, y + i)
+        term.print(lines[i])
+    end
+
+    return true
+end
+
+function M.on_interval(elapsed)
+    return M.func(elapsed)
+end
+
+function M.on_timeout(elapsed)
+    if not M.screen_locked then
+        tio.set_hook(tio.C.HK_LOCAL_SEND, function(data) return "" end)
+        tio.set_hook(tio.C.HK_LOCAL_RECEIVE, M.on_key_press)
+        tio.set_hook(tio.C.HK_TIMER_INTERVAL, M.on_interval)
+        term.switch_to_alternative_screen()
+        term.cursor_off()
+        term.clear_screen()
+        M.screen_locked = true
+
+        tio.stop_timer()
+        tio.start_timer(M.interval, tio.C.WAIT_FOREVER)
+    end
+
+    M.func(0)
+    return false -- skip timer initializing after this function.
+end
+
+function M.start(info, trigger_idle_time, interval, func)
+    if info then
+        M.info = info
+    else
+        if tio.get_device_info then
+            local devinfo = { tio.get_device_info() }
+            if devinfo[1] == devinfo[2] then
+                M.info = string.format("%s", devinfo[1])
+            else
+                M.info = string.format("%s (%s)", devinfo[1], devinfo[2])
+            end
+        else
+            M.info = ""
+        end
+    end
+    M.trigger_idle_time = trigger_idle_time or M.C.DEFAULT_TRIGGER_IDLE_TIME
+    M.interval = interval or M.C.DEFAULT_INTERVAL
+    M.func = func or default_saver
+    M.screen_locked = false
+
+    math.randomseed(os.time())
+
+    tio.subcmd_puts("screensaver start.")
+
+    tio.set_hook(tio.C.HK_LOCAL_RECEIVE, M.on_key_press)
+    tio.set_hook(tio.C.HK_TIMER_COMPLETE, M.on_timeout)
+    tio.start_timer(tio.C.WAIT_FOREVER, M.trigger_idle_time)
+
+    return true
+end
+
+function M.stop()
+    tio.stop_timer()
+    tio.set_hook(tio.C.HK_LOCAL_SEND, nil)
+    tio.set_hook(tio.C.HK_LOCAL_RECEIVE, nil)
+    tio.set_hook(tio.C.HK_TIMER_INTERVAL, nil)
+end
+
+return M

@@ -31,3 +31,4 @@ tio.set_keymap('@2=!local mod = require("tio_toy"); mod.ball()')
 -- Start
 --
 local mod = require("tio_toy"); mod.banner()
+local mod = require("tio_screensaver"); mod.start();

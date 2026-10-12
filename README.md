@@ -200,7 +200,7 @@ To restart the Lua interpreter during a session:
 ```text
 Ctrl-t r
 @new
-``` 
+```
 
 
 ## Keyboard Shortcuts
@@ -321,6 +321,31 @@ Invocation:
 Ctrl-t r
 ! tio_file_transfer.menu()
 ```
+
+
+
+### tio_screensaver
+
+The screensaver tool.
+
+Loading:
+
+```text
+Ctrl-t r
+! tio_screensaver = require("tio_screensaver")
+
+Invocation:
+
+```text
+Ctrl-t r
+! tio_screensaver.start()
+```
+or add these lines to your script-init-file.
+```text
+tio_screensaver = require("tio_screensaver")
+tio_screensaver.start()
+```
+
 
 
 ### tio_debugger
